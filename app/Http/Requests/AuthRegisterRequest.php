@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 class AuthRegisterRequest extends BaseRequest{
+    protected array $expectedParameters = ["email", "password", "passwordConfirmation"];
+
     public function rules(): array{
         return [
             "email"                => "required|email|unique:users,max:255",
