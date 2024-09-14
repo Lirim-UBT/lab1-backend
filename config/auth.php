@@ -10,11 +10,12 @@ return [
     | This option defines the default authentication "guard" and password
     | reset "broker" for your application. You may change these values
     | as required, but they're a perfect start for most applications.
+    | as required, but they're a perfect start for most applications.
     |
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
+        'guard' => env('AUTH_GUARD', 'api'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
@@ -37,7 +38,7 @@ return [
 
     'guards' => [
         'web' => [
-            'driver' => 'session',
+            'driver' => 'jwt',
             'provider' => 'users',
         ],
     ],
