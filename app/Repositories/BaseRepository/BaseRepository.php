@@ -61,42 +61,4 @@ class BaseRepository implements BaseRepositoryInterface{
     public function exists(int $id): bool{
         return $this->model->where("id", $id)->exists();
     }
-
-    public function searchCaseInsensitive(array $filterParameters): Collection{
-        return $this->searchScaffolding(15, $filterParameters, "ILIKE", false);
-    }
-
-    public function searchCaseSensitive(array $filterParameters): Collection{
-        return $this->searchScaffolding(15, $filterParameters, "LIKE", false);
-    }
-
-    public function searchCaseInsensitivePaginated(int $perPage, array $filterParameters): LengthAwarePaginator{
-        return $this->searchScaffolding($perPage, $filterParameters, "ILIKE", true);
-    }
-
-    public function searchCaseSensitivePaginated(int $perPage, array $filterParameters): LengthAwarePaginator{
-        return $this->searchScaffolding($perPage, $filterParameters, "LIKE", true);
-    }
-
-    protected function searchScaffolding(
-        int $perPage, array $filterParameters, string $operator, bool $paginated, int $count = -1
-    ){
-        $query = $this->model->query();
-        foreach($filterParameters as $field => $value){
-            $query->where("{$field}", $operator, "%{$value}%");
-        }
-        $query = $query->orderBy("created_at", "desc");
-
-        if($count !== -1){
-            $query = $query->take($count);
-        }
-
-        if($paginated){
-            $query = $query->paginate($perPage);
-        }else{
-            $query = $query->get();
-        }
-
-        return $query;
-    }
 }
