@@ -2,22 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AuthRegisterRequest;
+use App\Data\AuthLoginData;
+use App\Data\AuthRefreshTokenData;
+use App\Data\AuthRegisterData;
 use App\Http\Responses\ResponseBuilder;
-use App\Models\User;
+use App\Services\AuthService\AuthServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller{
-    public function register(AuthRegisterRequest $request): JsonResponse{
-        $passwordHash = Hash::make($request->password);
+    private AuthServiceInterface     $authService;
+    private ResponseBuilderInterface $responseBuilder;
 
-        $params = [
-            "email"    => $request->email,
-            "password" => $passwordHash,
-        ];
+    public function __construct(AuthServiceInterface $authService, ResponseBuilderInterface $responseBuilder){
+        $this->authService = $authService;
+        $this->responseBuilder = $responseBuilder;
+    }
 
-        $createUser = User::create($params);
+    public function register(AuthRegisterData $registerData): JsonResponse{
+        $passwordHash = Hash::make($registerData->password);
+
+        $registerData->password = $passwordHash;
+
+        $createUser = $this->authService->register($registerData);
 
         $responseBuilder = new ResponseBuilder();
 
@@ -28,11 +35,12 @@ class AuthController extends Controller{
         return $responseBuilder->status(400, false, "registrationFailed")->build();
     }
 
-    public function login(): JsonResponse{
-        $credentials = request(["email", "password"]);
-
+    public function login(AuthLoginData $loginData): JsonResponse{
         $responseBuilder = new ResponseBuilder();
-        if(!$token = auth()->attempt($credentials)){
+
+        $token = $this->authService->login($loginData);
+
+        if(!$token){
             return $responseBuilder->status(401, false, "loginFailed")->build();
         }
 
@@ -41,21 +49,24 @@ class AuthController extends Controller{
         return $responseBuilder->status(200, false, "loginSuccessful")->data($responseData)->build();
     }
 
-    public function me(): JsonResponse{
-        return (new ResponseBuilder())->status(200, false, "gatheredAuthenticatedUser")->data(auth()->user())->build();
-    }
-
     public function logout(): JsonResponse{
-        auth()->logout();
+        $this->authService->logout();
 
-        return (new ResponseBuilder())->status(200, false, "successfullyLoggedOut");
+        return (new ResponseBuilder())->status(200, false, "successfullyLoggedOut")->build();
     }
 
-    public function refresh(): JsonResponse{
-        $refreshedToken = auth()->refresh();
-        $responseData = $this->respondWithToken($refreshedToken);
+    public function refresh(AuthRefreshTokenData $refreshTokenData): JsonResponse{
+        $token = $this->authService->refreshToken($refreshTokenData->token);
 
-        return (new ResponseBuilder())->status(200, false, "refreshedAuthToken")->data($responseData)->build();
+        $responseBuilder = new ResponseBuilder();
+
+        if(!$token){
+            return $responseBuilder->status(404, false, "invalidToken")->build();
+        }
+
+        $responseData = $this->respondWithToken($token);
+
+        return $responseBuilder->status(200, false, "refreshedAuthToken")->data($responseData)->build();
     }
 
     private function respondWithToken($token): array{

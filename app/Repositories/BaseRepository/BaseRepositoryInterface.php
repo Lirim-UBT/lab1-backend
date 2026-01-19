@@ -14,7 +14,7 @@ interface BaseRepositoryInterface
 
     public function getById(int $id): Model|null;
 
-    public function create(array $createModelObject): Model;
+    public function create(array $createModelObject): object;
 
     public function upsert(array $pipelineStageIdentifierObject, array $pipelineStageUpdateObject);
 
